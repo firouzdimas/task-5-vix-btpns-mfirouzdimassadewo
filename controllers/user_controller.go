@@ -16,18 +16,18 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-
+// Register User
 func CreateUser(c *gin.Context) {
-	
+	//set database
 	db := c.MustGet("db").(*gorm.DB)
 
-	
+	// Baca data body
 	body, err := ioutil.ReadAll(c.Request.Body)
 	if err != nil {
 		c.JSON(http.StatusUnprocessableEntity, gin.H{"status": "F", "message": err.Error(), "data": nil})
 	}
 
-	
+	// ubah json menjadi object User
 	user_input := models.User{}
 	err = json.Unmarshal(body, &user_input)
 	if err != nil {
@@ -35,23 +35,23 @@ func CreateUser(c *gin.Context) {
 		return
 	}
 
-
+	// inisialisasi data user
 	user_input.Initialize()
 
-	
+	//Melakukan validasi data user
 	err = user_input.Validate("update")
 	if err != nil {
 		c.JSON(http.StatusUnprocessableEntity, gin.H{"status": "F", "message": err.Error(), "data": nil})
 		return
 	}
 
-
+	//Melakukan Hash password
 	err = user_input.HashPassword()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	
+	//Create data user ke database
 	err = db.Debug().Create(&user_input).Error
 	if err != nil {
 		formattedError := formaterror.ErrorMessage(err.Error())
@@ -59,7 +59,7 @@ func CreateUser(c *gin.Context) {
 		return
 	}
 
-	
+	//Custom response data
 	data := app.UserRegister{
 		ID:        user_input.ID,
 		Username:  user_input.Username,
@@ -68,7 +68,7 @@ func CreateUser(c *gin.Context) {
 		UpdatedAt: user_input.UpdatedAt,
 	}
 
-	
+	//Response success
 	c.JSON(http.StatusOK, gin.H{"status": "T", "message": "register user success", "data": data})
 }
 
